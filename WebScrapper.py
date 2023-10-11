@@ -9,8 +9,6 @@ import os
 
 
 def buscar_bloque(driver, since):
-    #Los volumenes estan agrupados según su año en bloques desplegables. Esta funcion se encarga de buscar el adecuado segun la fecha introducida.
-    #Si encuentra un bloque del mismo año que la fecha, devuelve el numero de orden del bloque. Si no, devuelve 0, que significa que se debe cambiar de pagina
     i = 1
     bloque_malo = 0
     pattern = r"\b(19|20)\d{2}\b"
@@ -28,24 +26,20 @@ def buscar_bloque(driver, since):
     return bloque_malo
 
 def contar_volumenes(driver, li):
-    #Esta funcion devuelve el numero de volumenes que hay dentro de un bloque
     volumenes = driver.find_elements(By.XPATH, f'//*[@id="all-issues"]/div[1]/ol/li[{li}]/div/section/div')
     return len(volumenes)
 
 def contar_articulos(driver):
-    #Esta funcion devuelve el numero de articulos que hay dentro de un volumen
     articulos = driver.find_elements(By.XPATH, '//*[@id="article-list"]/form/div/div[2]/ol/li')
     return len(articulos)
 
 def avanzar_pagina(driver, page):
-    #Esta funcion avanza una pagina para poder buscar por bloques mas antiguos
     page+=1
     driver.get(f"https://www.sciencedirect.com/journal/information-sciences/issues?page={page}")
     time.sleep(0.5)
     return page
 
 def buscar_volumen(driver, since, li):
-    #se busca el volumen que tenga una fecha acorde con el since que nos dan
         num_volumen = 0
         no_hay_volumen = 0
         num_volumes_en_ano = contar_volumenes(driver, li)
@@ -74,7 +68,6 @@ def buscar_volumen(driver, since, li):
         return no_hay_volumen
 
 def entrar_en_volumen(driver, li, volumen):
-    #Esta funcion entra en un volumen y lo coloca en una nueva pestaña
     volumen = driver.find_element(By.XPATH, f'//*[@id="all-issues"]/div[1]/ol/li[{li}]/div/section/div[{volumen}]/a')
     volumen.send_keys(Keys.CONTROL + Keys.RETURN)
     driver.switch_to.window(driver.window_handles[1])
@@ -82,7 +75,6 @@ def entrar_en_volumen(driver, li, volumen):
     return 
 
 def entrar_en_articulo(driver, articulo):
-    #Esta funcion entra en un articulo y lo coloca en una nueva pestaña
     elemento = driver.find_element(By.XPATH, f'//*[@id="article-list"]/form/div[1]/div[2]/ol/li[{articulo}]/dl/dt/h3/a')
     elemento.send_keys(Keys.CONTROL + Keys.RETURN)
     driver.switch_to.window(driver.window_handles[2])
@@ -90,10 +82,6 @@ def entrar_en_articulo(driver, articulo):
     return
 
 def buscar_articulos(driver, articulos_pedidos, lista_info_articulos, since):
-    #Esta funcion mira los articulos dentro de un volumen. Si el articulo es de tipo "Research article", comprueba su fecha.
-    #Dependiendo de la fecha introducida el articulo es aceptado o no
-    #Si el articulo es aceptado, lo mete en la lista de articulos deseados
-    #La funcion busca articulos en el volumen hasta que se acaben, o hasta que se alcance el numero de articulos deseados
     articulo = 1
     n_art = articulos_pedidos
     num_articulos = contar_articulos(driver)
@@ -116,9 +104,6 @@ def buscar_articulos(driver, articulos_pedidos, lista_info_articulos, since):
     return articulos_pedidos - n_art
 
 def sacar_fecha_articulo(driver):
-    #Esta funcion devuelve la fecha de un articulo, normalmente denominada como "Received"
-    #Si no tuviese esta denominacion, buscaria por "Available Online"
-    #Para buscar la fecha, primero se debe hacer click en el boton desplegable
     time.sleep(1)
     boton_desplegable = driver.find_element(By.XPATH, '//*[@id="show-more-btn"]')
     boton_desplegable.click()
@@ -136,11 +121,6 @@ def sacar_fecha_articulo(driver):
     return fecha_final
 
 def extraer_info_articulo(driver):
-    #Esta funcion devuelve una lista con toda la informacion de un articulo (Nombre, titulo, fecha, abstract y keywords)
-    #El nombre sera comun para todos, ya que todos pertenecen a la misma pagina web
-    #Hay una pequeñisima probabilidad de que un articulo tenga su abstract dentro de un archivo pdf al que se tendria que acceder.
-    #Si esto ocurre, se ignora este abstract
-    #Si un articulo tiene keywords, las coloca dentro de una lista. Si no tiene, deja la lista vacia
     nombre = "Information Sciences"
     titulo = titulo = driver.find_element(By.XPATH, '//*[@id="screen-reader-main-title"]/span').text
     fecha = sacar_fecha_articulo(driver)
@@ -162,11 +142,6 @@ def extraer_info_articulo(driver):
     return info_articulo
 
 def siguiente_volumen(driver, li, volumen_actual, page):
-    #Esta funcion sirve para saltar de un volumen al siguiente
-    #Si estamos en el ultimo volumen de un bloque, se salta al siguiente y se coloca en el primer volumen
-    #Si ademas estamos en el ultimo bloque de la pagina, avanza a la siguiente y se coloca en el primer bloque
-    #Ya que el primer bloque de cada pagina aparece ya desplegado por defecto, no hace falta hacer click.
-    #A partir de este, en todos los bloques es necesario hacer click para desplegarlos antes de acceder a ellos
     volumen = volumen_actual
     num_volumenes = contar_volumenes(driver, li)
     if(volumen == num_volumenes): 
@@ -184,7 +159,6 @@ def siguiente_volumen(driver, li, volumen_actual, page):
     return page
 
 def comprobar_fecha(info_articulo, fecha_input):
-    #Esta funcion se encarga de aceptar o rechazar los articulos segun su fecha y la fecha introducida
     fecha_articulo = info_articulo[2]
     if(fecha_articulo > fecha_input):
         return 0
@@ -192,9 +166,6 @@ def comprobar_fecha(info_articulo, fecha_input):
         return 1
 
 def extract(n_art, since=None):
-    #Esta funcion se encarga de iniciar el driver de chrome y de buscar los articulos deseados segun la fecha introducida, haciendo uso del resto de funciones
-    #Si se pide un numero de articulos menor o igual que 0, se saca siempre al menos 1 articulo
-    #si no se especifica fecha, se busca segun la fecha actual
     page = 1
     lista_info_articulos = []
     if(since == None):
@@ -235,8 +206,6 @@ def extract(n_art, since=None):
     return lista_info_articulos
 
 def iniciar():
-    #Esta funcion se encarga de configurar la busqueda de articulos, como el numero de estos que se quiere sacar y a partir de que fecha
-    #Si no se quiere introducir ninguna fecha, se selecciona la fecha actual por defecto
     print("¿Cuantos articulos quieres sacar?")
     n_art = round(float(input()))
     while(n_art <= 0):
@@ -255,13 +224,9 @@ def iniciar():
     lista_final = extract(n_art, since)
     return lista_final
 
-#main
-
 resultado = iniciar()
 
 def imprimir_informacion(lista_info_articulos):
-    #Esta funcion crea un archivo txt en el mismo directorio en el que se encuentre el archivo py de este programa
-    #En el, imprime la informacion recopilada de todos los articulos que han sido aceptados
     path = os.path.abspath(__file__)
     dir = os.path.dirname(path)
     file_path = os.path.join(dir, 'Information_Sciences.txt')
